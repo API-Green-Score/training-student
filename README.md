@@ -1,10 +1,3 @@
-# training-student
-The project aims to raise awareness about the impact of digital technology through practical application, guided by the best practices outlined in the API Green Score Guide
-
-This is a first TP of 2 hours for training students with 4 exercices with Java 
-
-[TP_1](https://github.com/API-Green-Score/training-student#:~:text=4%20days%20ago-,TP_FR.md,-feat(tp)%3A%20add)
-
 # 🌱 Green APIs Lab – Learn to Code Responsibly with API Green Score
 
 ## 🇬🇧 Welcome to the API Green Score Lab!
