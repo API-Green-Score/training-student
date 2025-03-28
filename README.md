@@ -1,6 +1,6 @@
 # 🌱 Green APIs Lab – Learn to Code Responsibly with API Green Score
 
-## 🇬🇧 Welcome to the API Green Score Lab!
+## Welcome to the API Green Score Lab!
 
 This 2-hour hands-on lab is your gateway to **eco-conscious API development**. In a world increasingly dependent on digital services, we often forget the hidden environmental cost behind every API call.
 
@@ -17,7 +17,7 @@ Get ready to question how we code and think about performance, bandwidth, and en
 
 ---
 
-## 🇫🇷 Bienvenue dans le  "API Green Score Lab" !
+## Bienvenue dans le  "API Green Score Lab" !
 
 Ce TP de 2 heures vous plonge dans un sujet essentiel : **l’impact environnemental du numérique** – et plus précisément des API que nous utilisons au quotidien.
 
