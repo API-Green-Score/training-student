@@ -20,13 +20,13 @@ Concevoir un système de logs efficace pour surveiller l’utilisation des API :
 
 1. **Choisir le support de stockage** :
 
-* Vous pouvez enregistrer les logs dans un fichier JSON, dans un fichier plat (log4j2, logback) ou les centraliser dans
-  une base de données (par ex. H2 en mémoire pour la démo).
-* Une base de données permet des requêtes plus flexibles (recherches, filtres, etc.), tandis qu’un fichier plat est plus
-  léger à mettre en place.
+   * Vous pouvez enregistrer les logs dans un fichier JSON, dans un fichier plat (log4j2, logback) ou les centraliser dans
+     une base de données (par ex. H2 en mémoire pour la démo).
+   * Une base de données permet des requêtes plus flexibles (recherches, filtres, etc.), tandis qu’un fichier plat est plus
+     léger à mettre en place.
 
 2. **Mettre en place la structure de log** :
-   Définissez un modèle (LogEntry) qui représentera chaque entrée de log :
+   * Définissez un modèle (LogEntry) qui représentera chaque entrée de log :
 
 ```java
 public class LogEntry {
@@ -35,34 +35,33 @@ public class LogEntry {
     private int payloadSize;
     private long responseTime;
     private HttpStatus httpStatus;
-// Getters/Setters/Constructeur
+    // Getters/Setters/Constructeur
 }
 ```
 
 3. **Concevoir un contrôleur ou un service dédié** :
 
-* Ce service (ou ce contrôleur) va intercepter ou recueillir les données d’appel (URL, temps de début, temps de fin,
-  taille du payload, code de statut HTTP, etc.).
-* Si vous utilisez Spring Boot avec un RestTemplate, vous pouvez mesurer le temps avant et après l’appel pour déterminer
-  la durée.
+   * Ce service (ou ce contrôleur) va intercepter ou recueillir les données d’appel (URL, temps de début, temps de fin,
+     taille du payload, code de statut HTTP, etc.).
+   * Si vous utilisez Spring Boot avec un RestTemplate, vous pouvez mesurer le temps avant et après l’appel pour déterminer
+     la durée.
 
 4. **Persister ou écrire les logs** :
 
-* Si base H2 : créer un repository Spring Data JPA (LogRepository) et persister l’objet LogEntry.
-* Sinon, utilisez l’API de logging (SLF4J, Log4J, Logback) pour écrire les informations (en format JSON si besoin) dans
-  un fichier.
+   * Si base H2 : créer un repository Spring Data JPA (LogRepository) et persister l’objet LogEntry.
+   * Sinon, utilisez l’API de logging (SLF4J, Log4J, Logback) pour écrire les informations (en format JSON si besoin) dans
+     un fichier.
 
 5. **Structure finale** :
 
-* Un service/contrôleur qui fait l’appel API.
-* Un repository (ou le logger) pour stocker les infos.
+   * Un service/contrôleur qui fait l’appel API.
+   * Un repository (ou le logger) pour stocker les infos.
 
-Exemple de code (version améliorée)
+### Exemple de code (version améliorée)
+
+#### Classe de configuration pour H2 (optionnel)
 
 ``` java
-Classe de configuration pour H2 (optionnel)
-
-
 
 // application.properties
 spring.datasource.url=jdbc:h2:mem:logdb
@@ -78,15 +77,17 @@ logging.level.org.hibernate.SQL=DEBUG
 ``` Java
 @Entity
 public class LogEntry {
-@Id
-@GeneratedValue(strategy = GenerationType.IDENTITY)
-private Long id;
-private String url;
-private long timestamp;
-private int payloadSize;
-private long responseTime;
-private int statusCode;
-// Constructeurs, getters, setters
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+
+  private String url;
+  private long timestamp;
+  private int payloadSize;
+  private long responseTime;
+  private int statusCode;
+  
+  // Constructeurs, getters, setters
 }
 ```
 #### Repository
@@ -102,40 +103,49 @@ public interface LogRepository extends JpaRepository<LogEntry, Long> {
 @RestController
 @RequestMapping("/logs")
 public class LogController {
+
   private final Logger logger = LoggerFactory.getLogger(LogController.class);
   private final LogRepository logRepository;
+  
   public LogController(LogRepository logRepository) {
     this.logRepository = logRepository;
   }
-@GetMapping("/log")
-public ResponseEntity<String> logApiCall(@RequestParam String url) {
-  long startTime = System.currentTimeMillis();
-  RestTemplate restTemplate = new RestTemplate();
-  // Effectuer la requête
-  ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-  // Calcul de la durée et de la taille
-  long duration = System.currentTimeMillis() - startTime;
-  int payloadSize = response.getBody() != null ? response.getBody().getBytes().length : 0;
-  int statusCode = response.getStatusCodeValue();
-  // Construction de notre LogEntry
-  LogEntry logEntry = new LogEntry();
-  logEntry.setUrl(url);
-  logEntry.setTimestamp(System.currentTimeMillis());
-  logEntry.setPayloadSize(payloadSize);
-  logEntry.setResponseTime(duration);
-  logEntry.setStatusCode(statusCode);
-  // Sauvegarde dans la base
-  logRepository.save(logEntry);
-  // Log « classique »
-  logger.info("URL: {} | Status: {} | Payload: {} bytes | Response Time: {} ms",
-  url, statusCode, payloadSize, duration);
-  return ResponseEntity.ok("Log ajouté");
+  
+  @GetMapping("/log")
+  public ResponseEntity<String> logApiCall(@RequestParam String url) {
+      long startTime = System.currentTimeMillis();
+      RestTemplate restTemplate = new RestTemplate();
+    
+      // Effectuer la requête
+      ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+    
+      // Calcul de la durée et de la taille
+      long duration = System.currentTimeMillis() - startTime;
+      int payloadSize = response.getBody() != null ? response.getBody().getBytes().length : 0;
+      int statusCode = response.getStatusCodeValue();
+    
+      // Construction de notre LogEntry
+      LogEntry logEntry = new LogEntry();
+      logEntry.setUrl(url);
+      logEntry.setTimestamp(System.currentTimeMillis());
+      logEntry.setPayloadSize(payloadSize);
+      logEntry.setResponseTime(duration);
+      logEntry.setStatusCode(statusCode);
+    
+      // Sauvegarde dans la base
+      logRepository.save(logEntry);
+    
+      // Log « classique »
+      logger.info("URL: {} | Status: {} | Payload: {} bytes | Response Time: {} ms",
+      url, statusCode, payloadSize, duration);
+    
+      return ResponseEntity.ok("Log ajouté");
   }
 }
 ``` 
 ### Résultat attendu
 * Un service Spring Boot qui logge chaque appel API.
-* Les logs sont disponibles soit dans la base H2 (consultez http://localhost:8080/h2-console pour voir la table) soit dans
+* Les logs sont disponibles soit dans la base H2 (consultez `http://localhost:8080/h2-console` pour voir la table) soit dans
 un fichier via Logback/Log4j.
 * Vous pouvez ainsi analyser plus tard la taille des payloads, le temps de réponse, etc.
 
@@ -152,7 +162,7 @@ jour).
 ### Approche et explication
 
 **1. OpenLibrary API :**
-* On effectue une requête sur https://openlibrary.org/search.json?q=harry+potter pour récupérer des données en JSON.
+* On effectue une requête sur `https://openlibrary.org/search.json?q=harry+potter` pour récupérer des données en JSON.
 * On utilise un convertisseur en ligne (ou un outil local) pour transformer la réponse JSON en XML.
 
 **2. Mesure de la taille :**
@@ -179,10 +189,10 @@ négligeable en termes de bande passante et de stockage.
 * **Format le plus léger** : JSON ressort généralement gagnant.
 * **Usage des logs** : Les logs montrent la taille des payloads.
 * **Documentation Green Score** :
-* Mentionner qu’une des bonnes pratiques est de choisir un format de données léger pour réduire l’empreinte carbone (
-réduction du trafic réseau, etc.).
-* Proposer d’utiliser la serialisation JSON par défaut pour les nouveaux endpoints.
-* Indiquer cette pratique dans le repo GitHub dans un fichier GREEN_GUIDELINES.md, par exemple.
+  * Mentionner qu’une des bonnes pratiques est de choisir un format de données léger pour réduire l’empreinte carbone (
+  réduction du trafic réseau, etc.).
+  * Proposer d’utiliser la serialisation JSON par défaut pour les nouveaux endpoints.
+  * Indiquer cette pratique dans le repo GitHub dans un fichier GREEN_GUIDELINES.md, par exemple.
 
 ---
 ## Exercice 3 : Réduction des données transférées avec Java Spring Boot 
@@ -212,40 +222,45 @@ exemple), ce qui réduit encore la taille des payloads transférés.
 @RestController
 @RequestMapping("/addresses")
 public class AddressController {
-// Exemple de mock
-private static final List<String> addresses = List.of(
-"10 avenue des Champs-Élysées, Paris",
-"5 rue de la Paix, Lyon",
-"12 boulevard Haussmann, Marseille",
-"50 rue Nationale, Bordeaux",
-"15 boulevard de Sébastopol, Paris",
-"23 rue Victor Hugo, Lyon"
-// etc.
-);
-// Pagination simple
-@GetMapping
-public ResponseEntity<List<String>> getAddresses(
-@RequestParam(defaultValue = "0") int page,
-@RequestParam(defaultValue = "2") int size,
-@RequestParam(required = false) String city // Filtre éventuel
-) {
-// Filtrage simple (optionnel)
-Stream<String> stream = addresses.stream();
-if (city != null && !city.isEmpty()) {
-stream = stream.filter(addr -> addr.toLowerCase().contains(city.toLowerCase()));
-}
-// Pagination
-List<String> filtered = stream.collect(Collectors.toList());
-int start = page * size;
-int end = Math.min(start + size, filtered.size());
-if (start > filtered.size()) {
-return ResponseEntity.ok(Collections.emptyList());
-}
-List<String> paginatedResult = filtered.subList(start, end);
-// On peut éventuellement logger la taille renvoyée
-// ...
-return ResponseEntity.ok(paginatedResult);
-}
+
+  // Exemple de mock
+  private static final List<String> addresses = List.of(
+    "10 avenue des Champs-Élysées, Paris",
+    "5 rue de la Paix, Lyon",
+    "12 boulevard Haussmann, Marseille",
+    "50 rue Nationale, Bordeaux",
+    "15 boulevard de Sébastopol, Paris",
+    "23 rue Victor Hugo, Lyon"
+    // etc.
+  );
+  
+  // Pagination simple
+  @GetMapping
+  public ResponseEntity<List<String>> getAddresses(
+    @RequestParam(defaultValue = "0") int page,
+    @RequestParam(defaultValue = "2") int size,
+    @RequestParam(required = false) String city // Filtre éventuel
+  ) {
+  
+    // Filtrage simple (optionnel)
+    Stream<String> stream = addresses.stream();
+    if (city != null && !city.isEmpty()) {
+      stream = stream.filter(addr -> addr.toLowerCase().contains(city.toLowerCase()));
+    }
+    
+    // Pagination
+    List<String> filtered = stream.collect(Collectors.toList());
+    int start = page * size;
+    int end = Math.min(start + size, filtered.size());
+    if (start > filtered.size()) {
+      return ResponseEntity.ok(Collections.emptyList());
+    }
+    List<String> paginatedResult = filtered.subList(start, end);
+    
+    // On peut éventuellement logger la taille renvoyée
+    // ...
+    return ResponseEntity.ok(paginatedResult);
+  }
 }
 ``` 
 * **city** : exemple de paramètre de filtrage (pour ne renvoyer que les adresses contenant “Paris” ou “Lyon”, etc.).
@@ -285,32 +300,37 @@ suivants renvoient la donnée en cache tant que le TTL (time to live) ou la poli
 @SpringBootApplication
 @EnableCaching
 public class MusicApplication {
-public static void main(String[] args) {
-SpringApplication.run(MusicApplication.class, args);
+  public static void main(String[] args) {
+    SpringApplication.run(MusicApplication.class, args);
+  }
 }
-}
+
 @Service
 public class MusicService {
+
 private final RestTemplate restTemplate = new RestTemplate();
-@Cacheable("categories")
-public String getCategories() {
-String url = "https://api.spotify.com/v1/browse/categories";
-// Dans la vraie vie, il faudrait ajouter un token OAuth, etc.
-return restTemplate.getForObject(url, String.class);
+
+  @Cacheable("categories")
+  public String getCategories() {
+    String url = "https://api.spotify.com/v1/browse/categories";
+    // Dans la vraie vie, il faudrait ajouter un token OAuth, etc.
+    return restTemplate.getForObject(url, String.class);
+  }
 }
-}
+
 @RestController
 @RequestMapping("/music")
 public class MusicController {
-private final MusicService musicService;
-public MusicController(MusicService musicService) {
-this.musicService = musicService;
-}
-@GetMapping("/categories")
-public ResponseEntity<String> getMusicCategories() {
-String categories = musicService.getCategories();
-return ResponseEntity.ok(categories);
-}
+  private final MusicService musicService;
+  public MusicController(MusicService musicService) {
+    this.musicService = musicService;
+  }
+
+  @GetMapping("/categories")
+  public ResponseEntity<String> getMusicCategories() {
+    String categories = musicService.getCategories();
+    return ResponseEntity.ok(categories);
+  }
 }
 
 ```
@@ -330,11 +350,12 @@ cache (jusqu’à invalidation ou TTL).
 
 ### Synthèse des résultats
 
-** 1. Impact des logs :**
-* Mise en place d’un système de logs donne de la visibilité sur les métriques clés (temps de réponse, taille de payload,
+**1. Impact des logs :**
+  * Mise en place d’un système de logs donne de la visibilité sur les métriques clés (temps de réponse, taille de payload,
 fréquence d’appels).
-* Permet de quantifier précisément les gains des optimisations (pagination, filtrage, cache, etc.).
-** 2.Comparaison JSON vs XML :**
+  * Permet de quantifier précisément les gains des optimisations (pagination, filtrage, cache, etc.).
+
+**2.Comparaison JSON vs XML :**
 * Le JSON se révèle plus léger que le XML dans la plupart des cas.
 * Sur un volume important (1 million d’appels/jour), la réduction de bande passante est conséquente.
 
@@ -349,7 +370,7 @@ fréquence d’appels).
 ### Contributions à API Green Score
 
 * **Documentation :**
-  * Rédiger un document (ex. GREEN_GUIDELINES.md ou wiki) dans le repo qui explique chacune de ces optimisations :
+  * Rédiger un document (ex. `GREEN_GUIDELINES.md` ou wiki) dans le repo qui explique chacune de ces optimisations :
 
     * Choix d’un format léger (JSON).
     * Limiter le volume de données via pagination/filtrage.
@@ -361,10 +382,11 @@ fréquence d’appels).
   et la taille moyenne des payloads.
 
 * **Accessibilité pour les nouveaux contributeurs :**
-* Expliquer dans un README comment démarrer le projet, configurer la base H2, exécuter des tests de performance, etc.
+  * Expliquer dans un README comment démarrer le projet, configurer la base H2, exécuter des tests de performance, etc.
 
 En appliquant l’ensemble de ces approches, on améliore à la fois les performances de l’application et on réduit son
 impact environnemental, ce qui correspond parfaitement aux objectifs d’un projet respectant un « Green Score ».
+
 
 Voici deux exemples de règles (en anglais et en français), rédigées dans un style cohérent avec le format de
 [API-Green-Score.](https://github.com/API-Green-Score/APIGreenScore/blob/main/resources/YYxx_en.md)
@@ -556,15 +578,15 @@ envoyées aux services externes, de diminuer la bande passante utilisée et d’
 ## Comment intégrer ces exemples dans votre repo
 
 **1.Nomenclature de fichiers :**
-* Placez vos règles dans le dossier resources/, en respectant un nom de fichier du type 01xx_en.md et 01xx_fr.md, où 01xx
+* Placez vos règles dans le dossier resources/, en respectant un nom de fichier du type `01xx_en.md` et `01xx_fr.md`, où `01xx`
 correspond à l’ID de la règle (à adapter selon votre convention).
 
 **2.Sommaire/Index :**
-* Assurez-vous qu’il y a un fichier d’index (par ex. RULES_INDEX.md) ou un README qui recense vos règles et fournit un
-lien vers chacun des fichiers _en.md et _fr.md.
+* Assurez-vous qu’il y a un fichier d’index (par ex. `RULES_INDEX.md`) ou un README qui recense vos règles et fournit un
+lien vers chacun des fichiers `_en.md` et `_fr.md`.
 
 **3.Pull Request :**
-* Proposez vos nouvelles règles ou modifications via une Pull Request sur le dépôt API-Green-Score.
+* Proposez vos nouvelles règles ou modifications via une Pull Request sur le dépôt [API-Green-Score](https://github.com/API-Green-Score/APIGreenScore).
 * Discutez avec les mainteneurs pour valider la rédaction et l’alignement avec les bonnes pratiques existantes.
 
 De cette manière, vous obtenez des règles bilingues, structurées et faciles à maintenir, tout en contribuant à la
