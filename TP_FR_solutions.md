@@ -28,14 +28,34 @@ Concevoir un système de logs efficace pour surveiller l’utilisation des API :
 2. **Mettre en place la structure de log** :
    * Définissez un modèle (LogEntry) qui représentera chaque entrée de log :
 
+**Exemple de LogEntry**
 ```java
+@Entity
+@Data
 public class LogEntry {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private String url;
     private long timestamp;
     private int payloadSize;
     private long responseTime;
-    private HttpStatus httpStatus;
-    // Getters/Setters/Constructeur
+    private int statusCode;
+    private String callerIp;
+
+    @Override
+    public String toString() {
+        return "LogEntry{" +
+                "id=" + id +
+                ", url='" + url + '\'' +
+                ", timestamp=" + timestamp +
+                ", payloadSize=" + payloadSize +
+                ", responseTime=" + responseTime +
+                ", statusCode=" + statusCode +
+                ", callerIP=" + callerIp +
+                '}';
+    }
 }
 ```
 
@@ -46,6 +66,25 @@ public class LogEntry {
    * Si vous utilisez Spring Boot avec un RestTemplate, vous pouvez mesurer le temps avant et après l’appel pour déterminer
      la durée.
 
+**Exemple d'utilisation dans un contrôleur**
+
+```java
+@GetMapping("/hello")
+public ResponseEntity<String> hello(@RequestParam String url, HttpServletRequest request) {
+long start = System.currentTimeMillis();
+String responseBody = "{\"message\": \"Hello, API Green Score! URL: " + url + "\"";
+long end = System.currentTimeMillis();
+
+    long responseTime = end - start;
+    responseBody += ", \"responseTime\": " + responseTime + ", \"size\": " + responseBody.getBytes().length + "}";
+
+    logService.logApiCall(url, request.getRemoteAddr(), responseTime, responseBody.getBytes().length);
+
+    return ResponseEntity.ok()
+        .header("Content-Type", "application/json")
+        .body(responseBody);
+}
+```
 4. **Persister ou écrire les logs** :
 
    * Si base H2 : créer un repository Spring Data JPA (LogRepository) et persister l’objet LogEntry.
@@ -193,6 +232,7 @@ négligeable en termes de bande passante et de stockage.
   réduction du trafic réseau, etc.).
   * Proposer d’utiliser la serialisation JSON par défaut pour les nouveaux endpoints.
   * Indiquer cette pratique dans le repo GitHub dans un fichier GREEN_GUIDELINES.md, par exemple.
+
 
 ---
 ## Exercice 3 : Réduction des données transférées avec Java Spring Boot 
