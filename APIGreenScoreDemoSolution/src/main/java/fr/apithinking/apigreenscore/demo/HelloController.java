@@ -12,6 +12,9 @@ import org.springframework.web.client.RestTemplate;
 @RestController
 @RequestMapping("/api")
 public class HelloController {
+    private static final String URL_ERROR_MESSAGE = "L'URL doit commencer par http:// ou https://";
+    private static final String JSON_MIME_TYPE = "application/json";
+    private static final String XML_MIME_TYPE = "application/xml";
 
     private final LogService logService;
 
@@ -20,15 +23,24 @@ public class HelloController {
         this.logService = logService;
     }
 
+    /**
+     * Endpoint to return a greeting message.
+     *
+     * @param url the URL parameter
+     * @param request the HTTP request
+     * @return a JSON response with a greeting message
+     */
     @GetMapping("/hello")
-    public String hello(@RequestParam(value = "url", required = false, defaultValue = "defaultUrl") String url,
-                        HttpServletRequest request) {
+    public ResponseEntity<String> hello(@RequestParam(value = "url", required = false, defaultValue = "defaultUrl") String url,
+                                        HttpServletRequest request) {
 
         long start = System.currentTimeMillis();
-        String responseBody = "Hello, API Green Score! URL: " + url;
+        String responseBody = "{\"message\": \"Hello, API Green Score! URL: " + url + "\"";
+
         long end = System.currentTimeMillis();
+
         long responseTime = end - start;
-        responseBody +=" / Temps: " + responseTime + " ms / Taille: " + responseBody.getBytes().length + " octets";
+        responseBody += ", \"responseTime\": " + responseTime + ", \"size\": " + responseBody.getBytes().length + "}";
         logService.logApiCall(
                 url,
                 request.getRemoteAddr(),
@@ -36,13 +48,22 @@ public class HelloController {
                 responseBody.getBytes().length
         );
 
-        return responseBody;
+        return ResponseEntity.ok()
+                .header("Content-Type", JSON_MIME_TYPE)
+                .body(responseBody);
     }
 
+    /**
+     * Endpoint to test an external URL.
+     *
+     * @param url the URL to test
+     * @param request the HTTP request
+     * @return a response indicating the result of the URL test
+     */
     @GetMapping("/url2test")
     public ResponseEntity<String> testExternalUrl(@RequestParam String url, HttpServletRequest request) {
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            return ResponseEntity.badRequest().body("L'URL doit commencer par http:// ou https://");
+            return ResponseEntity.badRequest().body(URL_ERROR_MESSAGE);
         }
 
         RestTemplate restTemplate = new RestTemplate();
@@ -65,18 +86,40 @@ public class HelloController {
         return ResponseEntity.ok("Appel réussi. Statut: " + statusCode + " / Temps: " + responseTime + " ms");
     }
 
+    /**
+     * Endpoint to test a JSON URL.
+     *
+     * @param url the URL to test
+     * @param request the HTTP request
+     * @return a response indicating the result of the JSON URL test
+     */
     @GetMapping("/json2test")
     public ResponseEntity<String> testJsonUrl(@RequestParam String url, HttpServletRequest request) {
-        return fetchAndLogExternalUrl(url, request, "application/json");
+        return fetchAndLogExternalUrl(url, request, JSON_MIME_TYPE);
     }
 
+    /**
+     * Endpoint to test an XML URL.
+     *
+     * @param url the URL to test
+     * @param request the HTTP request
+     * @return a response indicating the result of the XML URL test
+     */
     @GetMapping("/xml2test")
     public ResponseEntity<String> testXmlUrl(@RequestParam String url, HttpServletRequest request) {
-        return fetchAndLogExternalUrl(url, request, "application/xml");
+        return fetchAndLogExternalUrl(url, request, XML_MIME_TYPE);
     }
+    /**
+     * Fetches and logs an external URL.
+     *
+     * @param url the URL to fetch
+     * @param request the HTTP request
+     * @param expectedContentType the expected content type of the response
+     * @return a response indicating the result of the URL fetch
+     */
     private ResponseEntity<String> fetchAndLogExternalUrl(String url, HttpServletRequest request, String expectedContentType) {
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            return ResponseEntity.badRequest().body("L'URL doit commencer par http:// ou https://");
+            return ResponseEntity.badRequest().body(URL_ERROR_MESSAGE);
         }
 
         RestTemplate restTemplate = new RestTemplate();
@@ -104,13 +147,22 @@ public class HelloController {
 
         return ResponseEntity.ok("✅ " + expectedContentType.toUpperCase() + " reçu. Statut: " + statusCode + " / Temps: " + responseTime + " ms / Taille: " + payloadSize + " octets");
     }
+    /**
+     * Endpoint to convert JSON to XML.
+     *
+     * @param url the URL to fetch JSON from
+     * @param request the HTTP request
+     * @return a response with the converted XML
+     */
     @GetMapping("/json2xml")
     public ResponseEntity<String> convertJsonToXml(@RequestParam String url, HttpServletRequest request) {
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            return ResponseEntity.badRequest().body("L'URL doit commencer par http:// ou https://");
+            return ResponseEntity.badRequest().body(URL_ERROR_MESSAGE);
         }
 
         RestTemplate restTemplate = new RestTemplate();
+
+
         long start = System.currentTimeMillis();
         ResponseEntity<String> response;
 
@@ -136,7 +188,7 @@ public class HelloController {
 
             // Retourne une réponse XML
             return ResponseEntity.ok()
-                    .header("Content-Type", "application/xml")
+                    .header("Content-Type", XML_MIME_TYPE)
                     .body(xml);
 
         } catch (Exception ex) {
