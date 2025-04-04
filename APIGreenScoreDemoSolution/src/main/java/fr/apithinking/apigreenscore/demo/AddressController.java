@@ -42,7 +42,7 @@ public class AddressController {
             new Address("40 avenue des Champs-Elysées", "Paris"),
             new Address("45 rue des Plantes", "Nantes"),
             new Address("20 rue de la Paix", "Lyon"),
-            new Address("42 boulevard Haussmann", "Marseille"),
+            new Address("42 boulevard Haussmann", "Marseil  le"),
             new Address("80 rue Nationale", "Bordeaux"),
             new Address("50 avenue des Champs-Elysées", "Paris"),
             new Address("55 rue des Plantes", "Nantes"),
